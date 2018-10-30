@@ -29,8 +29,11 @@
   <noscript>
     You need to enable JavaScript to run this app.
   </noscript>
-  <div id="root" style="height:10vh;"></div>
-  <div id="pano" style="height:90vh;"></div>
+  <div style="display: flex;">
+    <div id="pano" style="height:90vh;flex-grow: 1;"></div>
+    <div id="root" style="height:10vh;width:auto"></div>
+  </div>
+
   <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
@@ -53,8 +56,8 @@
       onready: krpano_ready
     });
 
-    function krpano_ready() {
-
+    function krpano_ready(e) {
+      console.log(e.get('scene').getArray());
     }
   </script>
 </body>
