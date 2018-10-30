@@ -1,8 +1,19 @@
 import React from "react";
-import { cloneDeep } from "lodash";
-import { Button } from "@material-ui/core";
+import { cloneDeep, isEmpty } from "lodash";
+import { Button, Card, CardContent, CardMedia } from "@material-ui/core";
+import { withStyles } from "@material-ui/core/styles";
+import HotspotEditor from "./hotspoteditor";
 
-export class PanoramaEditor extends React.PureComponent {
+const styles = {
+  card: {
+    maxWidth: 345
+  },
+  media: {
+    height: 140
+  }
+};
+
+class PanoramaEditor extends React.PureComponent {
   static defaultProps = {
     xml:
       "http://infomedia-image.oss-cn-beijing.aliyuncs.com/huogh001/9ee788f8-5462-4d43-96ab-70d7b6821814/tour.xml"
@@ -11,42 +22,56 @@ export class PanoramaEditor extends React.PureComponent {
   constructor(props) {
     super(props);
     this.krpano = document.getElementById("krpanoSWFObject");
+    this.container = document.getElementById("pano");
     this.state = {
       selectedHotspot: null,
       scenes: [],
-      currentSceneIndex: 0
+      currentSceneIndex: 0,
+      isDragging: false,
+      hotspotEditorVisible: false
     };
   }
   componentDidMount() {
     this.setup();
   }
 
-  init() {
+  panoloaded() {
     var scenes = this.krpano.get("scene").getArray();
     scenes.map(scene => {
       scene.hotspots = [];
     });
-
-    var currentSceneIndex = this.krpano
-      .get("scene")
-      .getItem(this.krpano.get("xml.scene")).index;
-
     this.setState({
-      scenes: scenes,
-      currentSceneIndex: currentSceneIndex
+      scenes: scenes
+    });
+  }
+
+  sceneLoaded() {
+    var clonedScenes = cloneDeep(this.state.scenes);
+    var index = this.krpano.get("scene").getItem(this.krpano.get("xml.scene"))
+      .index;
+    clonedScenes[index].hotspots = this.krpano.get("hotspot").getArray();
+    this.setState({
+      clonedScenes,
+      currentSceneIndex: index
     });
   }
 
   setup() {
-    this.krpano.set("events.onloadcomplete", this.init.bind(this));
+    this.krpano.set("events.onxmlcomplete", this.panoloaded.bind(this));
+    this.krpano.set("events.onnewscene", this.sceneLoaded.bind(this));
     this.krpano.call(`loadpano(${this.props.xml},null,MERGE,BLEND(1));`);
     //隐藏下方自带控制条
-    this.krpano.set("layer[skin_layer].visible", !1);
-    this.krpano.set("layer[skin_btn_prev_fs].visible", !1);
-    this.krpano.set("layer[skin_btn_next_fs].visible", !1);
+    this.krpano.set("layer[skin_layer].visible", false);
+    this.krpano.set("layer[skin_btn_prev_fs].visible", false);
+    this.krpano.set("layer[skin_btn_next_fs].visible", false);
+    this.container.onmousemove = () => {
+      this.moveHotspot();
+    };
   }
 
-  save() {}
+  save() {
+    debugger;
+  }
 
   addHotspot() {
     var clonedScenes = cloneDeep(this.state.scenes);
@@ -57,6 +82,7 @@ export class PanoramaEditor extends React.PureComponent {
       url:
         "http://infomedia-image.oss-cn-beijing.aliyuncs.com/huogh001/9ee788f8-5462-4d43-96ab-70d7b6821814/skin/vtourskin_hotspot.png"
     };
+    clonedScenes[this.state.currentSceneIndex].hotspots.push(hotspot);
     this.setState(
       {
         scenes: clonedScenes
@@ -69,41 +95,64 @@ export class PanoramaEditor extends React.PureComponent {
         );
         this.krpano.set(`hotspot[${hotspot.name}].ath`, hotspot.ath);
         this.krpano.set(`hotspot[${hotspot.name}].atv`, hotspot.atv);
+        this.krpano.set(`hotspot[${hotspot.name}].distorted`, true);
+        this.krpano.set(
+          `hotspot[${hotspot.name}].ondown`,
+          function(e) {
+            this.setState({
+              selectedHotspot: hotspot,
+              isDragging: true
+            });
+          }.bind(this)
+        );
+        this.krpano.set(
+          `hotspot[${hotspot.name}].onup`,
+          function() {
+            this.setState({
+              selectedHotspot: null,
+              isDragging: false
+            });
+          }.bind(this)
+        );
+        this.krpano.set(
+          `hotspot[${hotspot.name}].onclick`,
+          function() {
+            this.setState({
+              selectedHotspot: hotspot,
+              isDragging: false,
+              hotspotEditorVisible: true
+            });
+          }.bind(this)
+        );
       }
     );
+  }
 
-    // if (this.krpano) {
-    //   var h = this.krpano.get("view.hlookat");
-    //   var v = this.krpano.get("view.vlookat");
-    //   var hs_name = "hs" + ((Date.now() + Math.random()) | 0); // create unique/randome name
-    //   this.krpano.call("addhotspot(" + hs_name + ")");
-    //   this.krpano.set(
-    //     "hotspot[" + hs_name + "].url",
-    //     "http://infomedia-image.oss-cn-beijing.aliyuncs.com/huogh001/9ee788f8-5462-4d43-96ab-70d7b6821814/skin/vtourskin_hotspot.png"
-    //   );
-    //   this.krpano.set("hotspot[" + hs_name + "].ath", h);
-    //   this.krpano.set("hotspot[" + hs_name + "].atv", v);
-    //   this.krpano.set("hotspot[" + hs_name + "].distorted", true);
+  moveHotspot() {
+    if (
+      isEmpty(this.state.selectedHotspot) ||
+      this.state.isDragging === false
+    ) {
+      return;
+    }
 
-    //   if (this.krpano.get("device.html5")) {
-    //     // for HTML5 it's possible to assign JS functions directly to krpano events
-    //     this.krpano.set(
-    //       "hotspot[" + hs_name + "].onclick",
-    //       function(hs) {
-    //         alert('hotspot "' + hs + '" clicked');
-    //       }.bind(null, hs_name)
-    //     );
-    //   } else {
-    //     // for Flash the js() action need to be used to call from Flash to JS (this code would work for Flash and HTML5)
-    //     this.krpano.set(
-    //       "hotspot[" + hs_name + "].onclick",
-    //       "js( alert(calc('hotspot \"' + name + '\" clicked')) );"
-    //     );
-    //   }
-    //}
+    var pnt = this.krpano.screentosphere(
+      this.krpano.get("mouse.x"),
+      this.krpano.get("mouse.y")
+    );
+
+    this.krpano.set(
+      "hotspot[" + this.state.selectedHotspot.name + "].ath",
+      pnt.x
+    );
+    this.krpano.set(
+      "hotspot[" + this.state.selectedHotspot.name + "].atv",
+      pnt.y
+    );
   }
 
   render() {
+    const { classes } = this.props;
     return (
       <div style={{ width: 300 }}>
         <Button
@@ -120,7 +169,31 @@ export class PanoramaEditor extends React.PureComponent {
         >
           保存
         </Button>
+        {this.state.scenes.map(scene => {
+          return (
+            <Card key={scene.index} className={classes.card}>
+              <CardMedia
+                image={scene.thumburl}
+                title={scene.title}
+                className={classes.media}
+              />
+              <CardContent>{scene.name}</CardContent>
+            </Card>
+          );
+        })}
+        <HotspotEditor
+          visible={this.state.hotspotEditorVisible}
+          scenes={this.state.scenes}
+          hotspot={this.state.selectedHotspot}
+          onClose={() => {
+            this.setState({
+              hotspotEditorVisible: false
+            });
+          }}
+        />
       </div>
     );
   }
 }
+
+export default withStyles(styles)(PanoramaEditor);
