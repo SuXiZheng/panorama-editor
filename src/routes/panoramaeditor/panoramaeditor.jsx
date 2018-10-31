@@ -1,15 +1,36 @@
 import React from "react";
-import { cloneDeep, isEmpty } from "lodash";
-import { Button, Card, CardContent, CardMedia } from "@material-ui/core";
+import { cloneDeep, isEmpty, find, isEqual, findIndex } from "lodash";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardMedia,
+  CardActionArea,
+  FormControlLabel,
+  Radio,
+  TextField,
+  Divider
+} from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 import HotspotEditor from "./hotspoteditor";
 
 const styles = {
+  root: {
+    width: 300,
+    padding: 10
+  },
   card: {
-    maxWidth: 345
+    maxWidth: 345,
+    marginTop: 10
   },
   media: {
     height: 140
+  },
+  button: {
+    marginRight: 10
+  },
+  operating_container: {
+    marginBottom: 10
   }
 };
 
@@ -128,6 +149,32 @@ class PanoramaEditor extends React.PureComponent {
     );
   }
 
+  updateHotspot(hotspotForUpdating) {
+    var clonedScenes = cloneDeep(this.state.scenes);
+    var hotspotIndex = findIndex(
+      clonedScenes[this.state.currentSceneIndex].hotspots,
+      hotspot => isEqual(hotspot.name, hotspotForUpdating)
+    );
+
+    clonedScenes[this.state.currentSceneIndex].hotspots.splice(
+      hotspotIndex,
+      1,
+      hotspotForUpdating
+    );
+
+    this.setState(
+      {
+        scenes: clonedScenes
+      },
+      () => {
+        this.krpano.set(
+          `hotspot[${hotspotForUpdating.name}].linkedscene`,
+          hotspotForUpdating.linkedscene
+        );
+      }
+    );
+  }
+
   moveHotspot() {
     if (
       isEmpty(this.state.selectedHotspot) ||
@@ -151,33 +198,78 @@ class PanoramaEditor extends React.PureComponent {
     );
   }
 
+  changeScene(sceneIndex) {
+    this.setState(
+      {
+        currentSceneIndex: sceneIndex
+      },
+      () => {
+        this.krpano.call(`loadscene(${this.state.scenes[sceneIndex].name})`);
+      }
+    );
+  }
+
   render() {
     const { classes } = this.props;
     return (
-      <div style={{ width: 300 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={this.addHotspot.bind(this)}
-        >
-          添加热点
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={this.save.bind(this)}
-        >
-          保存
-        </Button>
+      <div className={classes.root}>
+        <div className={classes.operating_container}>
+          <Button
+            className={classes.button}
+            variant="contained"
+            color="primary"
+            onClick={this.addHotspot.bind(this)}
+          >
+            添加热点
+          </Button>
+          <Button
+            className={classes.button}
+            variant="contained"
+            color="primary"
+            onClick={this.save.bind(this)}
+          >
+            保存
+          </Button>
+        </div>
+        <Divider />
         {this.state.scenes.map(scene => {
           return (
-            <Card key={scene.index} className={classes.card}>
-              <CardMedia
-                image={scene.thumburl}
-                title={scene.title}
-                className={classes.media}
-              />
-              <CardContent>{scene.name}</CardContent>
+            <Card key={scene.index} className={classes.card} raised={true}>
+              <CardActionArea
+                onClick={e => {
+                  this.changeScene(scene.index);
+                }}
+              >
+                <CardMedia
+                  image={scene.thumburl}
+                  title={scene.title}
+                  className={classes.media}
+                />
+                <CardContent>
+                  <FormControlLabel
+                    control={
+                      <Radio
+                        value={scene.index}
+                        checked={isEqual(
+                          scene.index,
+                          this.state.currentSceneIndex
+                        )}
+                      />
+                    }
+                    label={
+                      <TextField
+                        onClick={e => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                        defaultValue={scene.title}
+                        placeholder="请输入场景标题"
+                        required={true}
+                      />
+                    }
+                  />
+                </CardContent>
+              </CardActionArea>
             </Card>
           );
         })}
@@ -185,6 +277,7 @@ class PanoramaEditor extends React.PureComponent {
           visible={this.state.hotspotEditorVisible}
           scenes={this.state.scenes}
           hotspot={this.state.selectedHotspot}
+          onSubmit={this.updateHotspot.bind(this)}
           onClose={() => {
             this.setState({
               hotspotEditorVisible: false

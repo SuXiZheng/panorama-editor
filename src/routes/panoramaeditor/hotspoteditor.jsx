@@ -17,11 +17,11 @@ import {
   Card,
   CardContent,
   Typography,
-  CardActions
+  CardActions,
+  FormControlLabel
 } from "@material-ui/core";
-import { StarBorder } from "@material-ui/icons";
 import { withStyles } from "@material-ui/core/styles";
-import { isEmpty, isEqual } from "lodash";
+import { isEmpty, isEqual, cloneDeep } from "lodash";
 
 const styles = theme => ({
   scenes_container: {
@@ -29,7 +29,8 @@ const styles = theme => ({
     alignItems: "flex-start"
   },
   card: {
-    width: 345
+    width: 345,
+    marginRight: 10
   },
   media: {
     height: 140
@@ -46,13 +47,15 @@ class HotspotEdtior extends React.PureComponent {
 
   static defaultProps = {
     isEdit: false,
+    onSubmit: hotspot => {},
     onClose: () => {}
   };
 
   constructor(props) {
     super(props);
     this.state = {
-      visible: false
+      visible: false,
+      selectedSceneName: ""
     };
   }
 
@@ -60,6 +63,13 @@ class HotspotEdtior extends React.PureComponent {
     var stateForUpdating = {};
     if (isEqual(this.props.visible, nextProps.visible) === false) {
       stateForUpdating.visible = nextProps.visible;
+    }
+    if (
+      isEmpty(nextProps.hotspot) === false &&
+      isEqual(this.props.hotspot, nextProps.hotspot) === false
+    ) {
+      stateForUpdating.selectedSceneName =
+        nextProps.hotspot.linkedscene || nextProps.scenes[0].name;
     }
     this.setState(stateForUpdating);
   }
@@ -76,6 +86,9 @@ class HotspotEdtior extends React.PureComponent {
   }
 
   submit() {
+    var clonedHotspot = cloneDeep(this.props.hotspot);
+    clonedHotspot.linkedscene = this.state.selectedSceneName;
+    this.props.onSubmit(clonedHotspot);
     this.close();
   }
 
@@ -92,37 +105,41 @@ class HotspotEdtior extends React.PureComponent {
       >
         <DialogTitle id="form-dialog-title">
           编辑热点
-          {this.props.hotspot.name}
+          {this.props.hotspot.title}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>跳转至场景：</DialogContentText>
           <div className={classes.scenes_container}>
             {scenes.map((scene, sceneIndex) => {
               return (
-                <Card className={classes.card}>
-                  <CardActionArea>
+                <Card className={classes.card} key={sceneIndex}>
+                  <CardActionArea
+                    onClick={() => {
+                      this.setState({
+                        selectedSceneName: scene.name
+                      });
+                    }}
+                  >
                     <CardMedia
                       className={classes.media}
                       image={scene.thumburl}
                       title={scene.name}
                     />
                     <CardContent>
-                      {/* <Typography gutterBottom variant="h5" component="h2">
-                        {scene.title}
-                      </Typography>
-                      <Typography gutterBottom> */}
-                      <Radio>{scene.title}</Radio>
-                      {/* </Typography> */}
+                      <FormControlLabel
+                        control={
+                          <Radio
+                            value={scene.name}
+                            checked={isEqual(
+                              scene.name,
+                              this.state.selectedSceneName
+                            )}
+                          />
+                        }
+                        label={scene.title}
+                      />
                     </CardContent>
                   </CardActionArea>
-                  {/* <CardActions>
-                    <Button size="small" color="primary">
-                      Share
-                    </Button>
-                    <Button size="small" color="primary">
-                      Learn More
-                    </Button>
-                  </CardActions> */}
                 </Card>
               );
             })}
