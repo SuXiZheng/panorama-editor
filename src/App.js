@@ -5,6 +5,7 @@ import PanoramaEditor from "./routes/panoramaeditor/panoramaeditor";
 
 class App extends Component {
   render() {
+    return <div>{process.env.REACT_APP_API_URL}</div>;
     return <PanoramaEditor />;
   }
 }

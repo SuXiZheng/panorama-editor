@@ -13,15 +13,27 @@ import {
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 import HotspotEditor from "./hotspoteditor";
+import { Uploader } from "../../components/uploader/uploader";
+import { AddAPhoto } from "@material-ui/icons";
+import UploadProgressbar from "./uploadprogressbar";
 
 const styles = {
   root: {
     width: 300,
-    padding: 10
+    padding: 10,
+    height: "calc(100% - 19px)",
+    overflow: "auto"
   },
   card: {
     maxWidth: 345,
-    marginTop: 10
+    marginTop: 10,
+    minHeight: 220
+  },
+  uploadButtonArea: {
+    height: 220,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center"
   },
   media: {
     height: 140
@@ -273,6 +285,30 @@ class PanoramaEditor extends React.PureComponent {
             </Card>
           );
         })}
+
+        <Uploader
+          action="http://localhost:4000/upload"
+          uploadButton={
+            <Card className={classes.card} raised={true}>
+              <CardActionArea className={classes.uploadButtonArea}>
+                <AddAPhoto style={{ fontSize: 70 }} />
+              </CardActionArea>
+            </Card>
+          }
+          progressbar={<UploadProgressbar />}
+          removeButtonVisible={false}
+          style={{
+            display: "flex",
+            flexDirection: "column"
+          }}
+          uploadButtonStyle={{
+            order: 2
+          }}
+          progressbarContainerStyle={{
+            order: 1
+          }}
+        />
+
         <HotspotEditor
           visible={this.state.hotspotEditorVisible}
           scenes={this.state.scenes}

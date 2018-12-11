@@ -1,0 +1,25 @@
+.uploadButton {
+}
+
+.progressbarContainer {
+  width: 100%;
+  display: flex;
+}
+
+.progressbar {
+  flex-grow: 1;
+  height: 100%;
+}
+
+.removeButton {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 16px;
+}
+.removeIcon {
+  cursor: pointer;
+  color: red;
+  font-size: 18px;
+}
