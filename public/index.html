@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-  <meta charset="utf-8">
-  <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="theme-color" content="#000000">
-  <!--
+  <head>
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="theme-color" content="#000000" />
+    <!--
       manifest.json provides metadata used when your web app is added to the
       homescreen on Android. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
-  <link rel="manifest" href="%PUBLIC_URL%/manifest.json">
-  <!--
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
       Only files inside the `public` folder can be referenced from the HTML.
@@ -20,21 +22,18 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-  <script src=" %PUBLIC_URL%/krpano/krpano.js"> </script>
-  <title>React App</title>
+    <script src=" %PUBLIC_URL%/krpano/krpano.js"></script>
+    <title>React App</title>
+  </head>
 
-</head>
+  <body>
+    <noscript> You need to enable JavaScript to run this app. </noscript>
+    <div style="display: flex;">
+      <div id="pano" style="height:100vh;flex-grow: 1;"></div>
+      <div id="root" style="height:100vh;width:auto"></div>
+    </div>
 
-<body>
-  <noscript>
-    You need to enable JavaScript to run this app.
-  </noscript>
-  <div style="display: flex;">
-    <!-- <div id="pano" style="height:100vh;flex-grow: 1;"></div> -->
-    <div id="root" style="height:100vh;width:auto"></div>
-  </div>
-
-  <!--
+    <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
 
@@ -44,21 +43,19 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
-  <!-- <script>
-    embedpano({
-      swf: "%PUBLIC_URL%/krpano/krpano.swf",     // path to flash viewer (use null if no flash fallback will be requiered)
-      id: "krpanoSWFObject",
-      xml: null,
-      target: "pano",
-      consolelog: true,          // trace krpano messages also to the browser console
-      passQueryParameters: true,
-      html5: "only",     // pass query parameters of the url to krpano
-      onready: krpano_ready
-    });
+    <script>
+      embedpano({
+        swf: "%PUBLIC_URL%/krpano/krpano.swf", // path to flash viewer (use null if no flash fallback will be requiered)
+        id: "krpanoSWFObject",
+        xml: null,
+        target: "pano",
+        consolelog: true, // trace krpano messages also to the browser console
+        passQueryParameters: true,
+        html5: "only", // pass query parameters of the url to krpano
+        onready: krpano_ready
+      });
 
-    function krpano_ready(e) {
-    }
-  </script> -->
-</body>
-
+      function krpano_ready(e) {}
+    </script>
+  </body>
 </html>
