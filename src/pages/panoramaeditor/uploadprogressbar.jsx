@@ -38,23 +38,29 @@ const styles = theme => ({
 
 class UploadProgressbar extends React.PureComponent {
   render() {
+    console.log(this.props.file.preview);
     const { classes, file } = this.props;
     return (
       <Card className={classes.card} raised={true}>
         <div className={classes.progressContainer}>
-          <CircularProgress
-            size={70}
-            className={classes.progress}
-            variant="determinate"
-            value={this.props.progress}
-          />
+          {this.props.isCompleted === false && (
+            <CircularProgress
+              size={70}
+              className={classes.progress}
+              variant="determinate"
+              value={this.props.progress}
+            />
+          )}
         </div>
-        <CardMedia
-          image={this.props.file.preview}
-          title={this.props.file.fileName}
-          className={classes.media}
-        />
-        <CardContent>
+        {this.props.isCompleted && (
+          <CardMedia
+            image={this.props.file.preview}
+            title={this.props.file.fileName}
+            className={classes.media}
+          />
+        )}
+
+        {/* <CardContent>
           <FormControlLabel
             control={
               <Radio
@@ -74,7 +80,7 @@ class UploadProgressbar extends React.PureComponent {
               />
             }
           />
-        </CardContent>
+        </CardContent> */}
       </Card>
     );
   }

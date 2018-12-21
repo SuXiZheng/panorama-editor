@@ -5,6 +5,9 @@ import { UploadTask } from "./task";
 import styles from "./uploader.module.css";
 import { Progressbar } from "./progressbar";
 import path from "path";
+import { connect } from "react-redux";
+import { bindActionCreators } from "redux";
+import { actions as ossActions } from "../../redux/oss";
 
 /**
  *上传组件
@@ -13,11 +16,12 @@ import path from "path";
  * @class Uploader
  * @extends {React.PureComponent}
  */
-export class Uploader extends React.Component {
+class Uploader extends React.Component {
   static propTypes = {
     multiple: PropTypes.bool,
-    action: PropTypes.string.isRequired,
+    // action: PropTypes.string.isRequired,
     accept: PropTypes.string,
+    onUploading: PropTypes.func,
     onError: PropTypes.func,
     onSuccess: PropTypes.func,
     uploadButton: PropTypes.object,
@@ -31,6 +35,7 @@ export class Uploader extends React.Component {
   static defaultProps = {
     multiple: true,
     accept: "*",
+    onUploading: () => {},
     onError: () => {},
     onSuccess: () => {},
     uploadButton: <button>上传</button>,
@@ -50,19 +55,21 @@ export class Uploader extends React.Component {
     };
   }
 
-  upload(files = []) {
+  upload = (files = []) => {
     if (isEmpty(files)) {
       throw new Error("文件不能为空");
     }
+
+    this.props.onUploading();
 
     var uploadTasks = [];
     var promises = [];
 
     files.map(file => {
-      var uploadTask = new UploadTask(file);
+      var uploadTask = new UploadTask(file, this.props.imagePolicy);
       uploadTask.onProgress = this.onProgress.bind(this);
       uploadTasks.push(uploadTask);
-      promises.push(uploadTask.execAsync(this.props.action));
+      promises.push(uploadTask.execAsync(this.props.imagePolicy.host));
     });
 
     this.setState({
@@ -72,13 +79,13 @@ export class Uploader extends React.Component {
     Promise.all(promises)
       .then(result => {
         this.refresh();
-        this.props.onSuccess();
+        this.props.onSuccess(this.state.tasks.map(task => task.ossPreviewUrl));
       })
       .catch(error => {
         this.refresh();
         this.props.onError(error);
       });
-  }
+  };
 
   refresh() {
     this.setState(this.state);
@@ -129,7 +136,6 @@ export class Uploader extends React.Component {
           multiple={this.props.multiple}
           accept={this.props.accept}
           onChange={e => {
-            debugger;
             const files = [];
             for (var i = 0; i < e.target.files.length; i++) {
               files.push(e.target.files.item(i));
@@ -153,9 +159,10 @@ export class Uploader extends React.Component {
                   {
                     progress: task.progress,
                     isError: task.isError,
+                    isCompleted: task.isCompleted,
                     file: {
                       fileName: task.file.name,
-                      preview: path.join("C:\\fakepath\\", task.file.name)
+                      preview: task.ossPreviewUrl
                     },
                     key: taskIndex
                   }
@@ -185,3 +192,18 @@ export class Uploader extends React.Component {
     );
   }
 }
+
+const mapStateToProps = (state, ownProps) => ({
+  imagePolicy: state.oss.imagePolicy.toJS().data
+});
+
+const mapDispatchToProps = dispatch => {
+  return {
+    ossActions: bindActionCreators(ossActions, dispatch)
+  };
+};
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Uploader);

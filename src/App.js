@@ -18,7 +18,7 @@ class App extends Component {
     return (
       <div className={classes.root}>
         <Switch>
-          <Route exact path="/:token/:xml" component={PanoramaEditor} />
+          <Route exact path="/:token/:materialId/:xml" component={PanoramaEditor} />
         </Switch>
       </div>
     );

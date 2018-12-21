@@ -1,3 +1,6 @@
+import uuid from "uuid";
+import { extname } from "path";
+
 /**
  * 上传任务
  *
@@ -5,8 +8,9 @@
  * @class UploadTask
  */
 export class UploadTask {
-  constructor(file) {
+  constructor(file, policy) {
     this._file = file;
+    this._policy = policy;
     this._isCanceled = false;
     this._isCompleted = false;
     this._isError = false;
@@ -15,6 +19,20 @@ export class UploadTask {
 
   get file() {
     return this._file;
+  }
+
+  /**
+   * OSS Policy
+   */
+  get policy() {
+    return this._policy;
+  }
+
+  /**
+   * Oss预览路径
+   */
+  get ossPreviewUrl() {
+    return this._ossPreviewUrl;
   }
 
   /**
@@ -107,7 +125,15 @@ export class UploadTask {
    */
   execAsync(serviceUrl) {
     var formData = new FormData();
+    formData.append("signature", this._policy.signature);
+    formData.append("OSSAccessKeyId", this._policy.accessid);
+    formData.append("policy", this._policy.policy);
+    const fileName = `${this._policy.key}material/images/${uuid.v4()}${extname(
+      this._file.name
+    )}`;
+    formData.append("key", fileName);
     formData.append("file", this._file);
+    this._ossPreviewUrl = `${this._policy.host}/${fileName}`;
     var instance = this;
     return new Promise((resolve, reject) => {
       var xhr = new XMLHttpRequest();

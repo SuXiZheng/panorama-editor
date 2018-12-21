@@ -17,24 +17,29 @@ import {
   FormControlLabel,
   Radio,
   TextField,
-  Divider
+  Divider,
+  CircularProgress
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 import HotspotEditor from "./hotspoteditor";
-import { Uploader } from "../../components/uploader/uploader";
+import Uploader from "../../components/uploader/uploader";
 import { AddAPhoto } from "@material-ui/icons";
 import UploadProgressbar from "./uploadprogressbar";
 import Scene from "./scene";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
 import { actions as ossActions } from "../../redux/oss";
+import { actions as authActions } from "../../redux/auth";
+import { actions as panoramaActions } from "../../redux/panorama";
 
 const styles = {
   root: {
     width: 300,
     padding: 10,
     height: "calc(100% - 19px)",
-    overflow: "auto"
+    overflow: "auto",
+    zIndex: 10,
+    position: "relative"
   },
   card: {
     maxWidth: 345,
@@ -55,6 +60,18 @@ const styles = {
   },
   operating_container: {
     marginBottom: 10
+  },
+  lodding: {
+    width: "100%",
+    height: "100%",
+    zIndex: 11,
+    position: "absolute",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    top: 0,
+    left: 0,
+    background: "#94919180"
   }
 };
 
@@ -64,6 +81,7 @@ class PanoramaEditor extends React.PureComponent {
       params: {
         token:
           "CYxjLs0tcz2UbVnAD%2ByE%2B%2B6cZk%2Bhv8kfOlMYxq8vNSqOfi7Gi0b8kIRzgV3oe%2FB0YXD6Zr7Ybbeo2CPiaCwGU7HNNJLj0%2Fc5J%2FZ4kYrFo4wECGbJhvffYURn6vZA9TwQLThB2YrW43jU41jUtw9jlvQTCFq67kCarmUoteMUPorpbrzWfRG%2BmoI%2FQ6CpVRE9",
+        materialId: "",
         xml:
           "http%3A%2F%2Fimages.muzhiyun.cn%2FPanoramaProjects%2F5c1754a8dc8e7e0108692cf3%2Ftour.xml"
       }
@@ -74,14 +92,15 @@ class PanoramaEditor extends React.PureComponent {
     super(props);
     this.krpano = document.getElementById("krpanoSWFObject");
     this.container = document.getElementById("pano");
-    props.ossActions.getImagePolicy();
     this.state = {
       selectedHotspot: null,
       scenes: [],
       currentSceneIndex: 0,
       isDragging: false,
-      hotspotEditorVisible: false
+      hotspotEditorVisible: false,
+      isUploadingFiles: false
     };
+    this.setToken(props);
   }
   componentDidMount() {
     this.setup();
@@ -90,7 +109,16 @@ class PanoramaEditor extends React.PureComponent {
   componentWillReceiveProps(nextProos) {
     if (isEqual(this.props.match.params, nextProos.match.params) === false) {
       console.info(nextProos.match.params);
+      this.setToken(nextProos);
     }
+  }
+
+  setToken(props = this.props) {
+    props.authActions
+      .setToken(decodeURIComponent(this.props.match.params.token))
+      .then(() => {
+        props.ossActions.getImagePolicy();
+      });
   }
 
   // panoloaded() {
@@ -125,7 +153,7 @@ class PanoramaEditor extends React.PureComponent {
   }
 
   setup() {
-    const xml = decodeURIComponent(this.props.match.params.xml);
+    const xml = `${decodeURIComponent(this.props.match.params.xml)}`;
     // this.krpano.set("events.onxmlcomplete", this.panoloaded.bind(this));
     this.krpano.set("events.onnewscene", this.sceneLoaded.bind(this));
     this.krpano.call(`loadpano(${xml},null,MERGE,BLEND(1));`);
@@ -300,6 +328,28 @@ class PanoramaEditor extends React.PureComponent {
     );
   };
 
+  onFilesUploading = () => {
+    this.setState({
+      isUploadingFiles: true
+    });
+  };
+
+  onFilesUploaded = files => {
+    this.setState(
+      {
+        isUploadingFiles: false
+      },
+      async () => {
+        await this.props.panoramaActions.makeNewScenes(
+          this.props.match.params.materialId,
+          files
+        );
+        window.location.reload();
+        // this.setup();
+      }
+    );
+  };
+
   render() {
     const { classes } = this.props;
     return (
@@ -335,7 +385,6 @@ class PanoramaEditor extends React.PureComponent {
         })}
 
         <Uploader
-          action="http://localhost:4000/upload"
           uploadButton={
             <Card className={classes.card} raised={true}>
               <CardActionArea className={classes.uploadButtonArea}>
@@ -355,6 +404,8 @@ class PanoramaEditor extends React.PureComponent {
           progressbarContainerStyle={{
             order: 1
           }}
+          onUploading={this.onFilesUploading}
+          onSuccess={this.onFilesUploaded}
         />
 
         <HotspotEditor
@@ -368,16 +419,27 @@ class PanoramaEditor extends React.PureComponent {
             });
           }}
         />
+
+        {(this.state.isUploadingFiles || this.props.isMakingNewScenes) && (
+          <div className={classes.lodding}>
+            {this.state.isUploadingFiles && <span>全景图上传中...</span>}
+            {this.props.isMakingNewScenes && <span>新场景创建中...</span>}
+          </div>
+        )}
       </div>
     );
   }
 }
 
-const mapStateToProps = state => ({});
+const mapStateToProps = (state, ownProps) => ({
+  isMakingNewScenes: state.panorama.makeNewScenes.get("isFetching")
+});
 
 const mapDispatchToProps = dispatch => {
   return {
-    ossActions: bindActionCreators(ossActions, dispatch)
+    ossActions: bindActionCreators(ossActions, dispatch),
+    authActions: bindActionCreators(authActions, dispatch),
+    panoramaActions: bindActionCreators(panoramaActions, dispatch)
   };
 };
 
